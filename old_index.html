@@ -1,4 +1,5 @@
-<!--soustraire le temps du premier aéroport -->
+<!--soustraire le temps du premier aéroport
+ajouter le nom de l'aéroport -->
 
 <!DOCTYPE html>
 <html lang="fr">
@@ -121,7 +122,7 @@
     <div class="container">
         <div class="form-group">
             <label for="critere">Critère de sélection :</label>
-            <select id="critere">
+            <select id="critere" onchange="chargerAeroports()">
                 <option value="distance">Distance</option>
                 <option value="temps">Temps</option>
                 <option value="coût">Coût</option>
@@ -148,10 +149,8 @@
     </div>
 
     <script>
-
-    let distances = {};
-    let prices = {};
-    let times = {};
+    let graphe = {};
+    let critere;
     let aeroportID = {};
 
     window.onload = function() {
@@ -159,8 +158,8 @@
     };
 
     async function chargerAeroports() {
-    
-        let fichier = "json/" + "all" + ".json";
+        critere = document.getElementById("critere").value;
+        let fichier = "json/" + critere + ".json";
         let url = fichier + "?t=" + new Date().getTime();
         
         try {
@@ -174,23 +173,9 @@
             )
 
             data.links.forEach(lien => {
-                if (!distances[lien.source]) {
-                    distances[lien.source] = {};
-                    times[lien.source] = {};
-                    prices[lien.source] = {};
-                }
-
-                distances[lien.source][lien.target] = lien.distance;
-                times[lien.source][lien.target] = lien.time;
-                prices[lien.source][lien.target] = lien.price;
-                
-
-                if (!distances[lien.target]) {
-                    distances[lien.target] = {};
-                    times[lien.target] = {};
-                    prices[lien.target] = {};
-                }
-
+                if (!graphe[lien.source]) graphe[lien.source] = {};
+                graphe[lien.source][lien.target] = lien.distance;
+                if (!graphe[lien.target]) graphe[lien.target] = {};
             });
 
             let departSelect = document.getElementById("depart");
@@ -215,59 +200,42 @@
         }
     }
 
-    function dijkstra(depart, arrivee,critere) {
-        let costs = {};
+    function dijkstra(graphe, depart, arrivee) {
+        let distances = {};
         let parents = {};
         let visited = new Set();
-        let noeuds;
-        let localgraph;
-
-        switch(critere){
-            case "distance":
-                noeuds = Object.keys(distances);
-                localgraph = distances;
-                break;
-            case "coût":
-                noeuds = Object.keys(prices);
-                localgraph = prices;
-                break;
-            case "temps":
-                noeuds = Object.keys(times);
-                localgraph = times;
-                break;
-        }
-
+        let noeuds = Object.keys(graphe);
 
         if(depart == arrivee){
-            return { chemin: [depart,arrivee], cost: 0 };
+            return { chemin: [depart,arrivee], distance: 0 };
         }
         if(!noeuds.includes(depart) || !noeuds.includes(arrivee)){
-            return { chemin: [], cost: Infinity };
+            return { chemin: [], distance: Infinity };
         }
 
-        noeuds.forEach(n => costs[n] = Infinity);
-        costs[depart] = 0;
+        noeuds.forEach(n => distances[n] = Infinity);
+        distances[depart] = 0;
 
         while (noeuds.length > 0) {
-            let noeudActuel = noeuds.reduce((min, n) => (costs[n] < costs[min] ? n : min));
+            let noeudActuel = noeuds.reduce((min, n) => (distances[n] < distances[min] ? n : min));
             noeuds = noeuds.filter(n => n !== noeudActuel);
             visited.add(noeudActuel);
 
             if (noeudActuel === arrivee) break;
 
-            for (let voisin in localgraph[noeudActuel]) {
+            for (let voisin in graphe[noeudActuel]) {
                 if (!visited.has(voisin)) {
-                    let newcost = costs[noeudActuel] + localgraph[noeudActuel][voisin];
-                    if (newcost < costs[voisin]) {
-                        costs[voisin] = newcost;
+                    let nouvelleDistance = distances[noeudActuel] + graphe[noeudActuel][voisin];
+                    if (nouvelleDistance < distances[voisin]) {
+                        distances[voisin] = nouvelleDistance;
                         parents[voisin] = noeudActuel;
                     }
                 }
             }
         }
 
-        if (costs[arrivee] === Infinity) {
-            return { chemin: [], cost: Infinity };
+        if (distances[arrivee] === Infinity) {
+            return { chemin: [], distance: Infinity };
         }
 
         let chemin = [];
@@ -277,12 +245,10 @@
             temp = parents[temp];
         }
 
-        return { chemin, cost: costs[arrivee] };
+        return { chemin, distance: distances[arrivee] };
     }
 
     function trouverPlusCourtChemin() {
-
-        let critere = document.getElementById("critere").value;
         let depart = aeroportID[document.getElementById("depart").value];
         let arrivee = aeroportID[document.getElementById("arrivee").value];
         let resultatDiv = document.getElementById("resultat");
@@ -302,32 +268,35 @@
             return;
         }
 
-        let resultat = dijkstra(depart, arrivee,critere);
+        let resultat = dijkstra(graphe, depart, arrivee);
 
-        if (resultat.cost === Infinity || resultat.chemin.length === 0) {
+        if (resultat.distance === Infinity || resultat.chemin.length === 0) {
             resultatDiv.innerHTML = `<p class='error'>Aucun chemin trouvé entre ${depart} et ${arrivee}.</p>`;
         } else {
-            let unite;
-            let cost;
-            let costAffichee = resultat.cost.toFixed(2);
+            let unite = "";
+            let distance = "";
+            let distanceAffichee = resultat.distance.toFixed(2);
             switch (critere) {
                 case "distance":
                     unite = "km";
-                    cost = "Distance totale";
+                    distance = "Distance totale";
                     break;
                 case "coût":
                     unite = "€";
-                    cost = "Coût total";
+                    distance = "Coût total";
                     break;
                 case "temps":
                     unite = "h"; 
-                    cost = "Temps total";
+                    distance = "Temps total";
+                    break;
+                default:
+                    unite = "km"; 
                     break;
             }
         console.log(resultat.chemin);
         resultatDiv.innerHTML = `<p class='success'>Le plus court chemin de ${depart} à ${arrivee} est :</p>
                                 <p>${resultat.chemin.join(" → ")}</p>
-                                <p>${cost} : ${costAffichee} ${unite}</p>`;
+                                <p>${distance} : ${distanceAffichee} ${unite}</p>`;
         }
     }
     </script>
