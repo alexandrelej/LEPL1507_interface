@@ -145,7 +145,7 @@ Peut être mettre un graphe mais pas sur que ca soit une bonne idée avec le nom
 
         async function chargerAeroports() {
             critere = document.getElementById("critere").value;
-            let fichier = "../json/" + critere + ".json";
+            let fichier = "json/" + critere + ".json";
             
             try {
                 let response = await fetch(fichier);
