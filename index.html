@@ -1,5 +1,3 @@
-<!--soustraire le temps du premier aéroport -->
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -21,22 +19,24 @@
             justify-content: center;
             align-items: center;
             position: relative;
+            overflow-x: hidden;
         }
 
         h1 {
             font-size: 36px;
             color: white;
             text-align: center;
-            margin-top: 20px;
+            margin-top: 40px;  /* Espacement suffisant du titre */
             position: absolute;
-            top: 10%;
+            top: 2.5%;
             width: 100%;
             z-index: 10;
         }
 
         /* Container for content */
         .container {
-            width: 80%;
+            width: 90%;
+            max-width: 800px;
             margin: 40px auto;
             background-color: rgba(255, 255, 255, 0.8); /* Fond blanc semi-transparent */
             border-radius: 10px;
@@ -47,11 +47,13 @@
 
         /* Form Elements */
         select, button {
-            padding: 10px;
-            margin: 10px;
+            padding: 12px;
+            margin: 12px 0;
             font-size: 16px;
             border-radius: 5px;
             border: 1px solid #ccc;
+            width: 100%;
+            box-sizing: border-box;
         }
 
         select:focus, button:focus {
@@ -74,6 +76,7 @@
             font-size: 18px;
             margin-right: 10px;
             color: #555;
+            display: block;
         }
 
         .form-group {
@@ -82,7 +85,7 @@
 
         /* Result Box */
         #resultat {
-            margin-top: 20px;
+            margin-top: 30px;  /* Augmentation de la marge pour éviter la superposition */
             background-color: #ecf0f1;
             padding: 20px;
             border-radius: 8px;
@@ -101,18 +104,20 @@
             font-weight: bold;
         }
 
-        /* Small mobile adjustments */
+        /* Mobile Adjustments */
         @media (max-width: 768px) {
-            .container {
-                width: 90%;
-            }
             h1 {
                 font-size: 28px;
             }
             select, button {
                 font-size: 14px;
             }
+            .container {
+                padding: 10px;
+                margin: 20px 0;
+            }
         }
+
     </style>
 </head>
 <body>
@@ -148,7 +153,6 @@
     </div>
 
     <script>
-
     let distances = {};
     let prices = {};
     let times = {};
@@ -170,8 +174,7 @@
 
             data.nodes.forEach(node => {
                 aeroportID[node.id + '(' + node.name + ')'] = node.id;
-            }
-            )
+            });
 
             data.links.forEach(lien => {
                 if (!distances[lien.source]) {
@@ -183,7 +186,6 @@
                 distances[lien.source][lien.target] = lien.distance;
                 times[lien.source][lien.target] = lien.time;
                 prices[lien.source][lien.target] = lien.price;
-                
 
                 if (!distances[lien.target]) {
                     distances[lien.target] = {};
@@ -215,14 +217,14 @@
         }
     }
 
-    function dijkstra(depart, arrivee,critere) {
+    function dijkstra(depart, arrivee, critere) {
         let costs = {};
         let parents = {};
         let visited = new Set();
         let noeuds;
         let localgraph;
 
-        switch(critere){
+        switch (critere) {
             case "distance":
                 noeuds = Object.keys(distances);
                 localgraph = distances;
@@ -237,11 +239,10 @@
                 break;
         }
 
-
-        if(depart == arrivee){
-            return { chemin: [depart,arrivee], cost: 0 };
+        if (depart == arrivee) {
+            return { chemin: [depart, arrivee], cost: 0 };
         }
-        if(!noeuds.includes(depart) || !noeuds.includes(arrivee)){
+        if (!noeuds.includes(depart) || !noeuds.includes(arrivee)) {
             return { chemin: [], cost: Infinity };
         }
 
@@ -302,7 +303,7 @@
             return;
         }
 
-        let resultat = dijkstra(depart, arrivee,critere);
+        let resultat = dijkstra(depart, arrivee, critere);
 
         if (resultat.cost === Infinity || resultat.chemin.length === 0) {
             resultatDiv.innerHTML = `<p class='error'>Aucun chemin trouvé entre ${depart} et ${arrivee}.</p>`;
@@ -324,15 +325,15 @@
                     cost = "Temps total";
                     break;
             }
-        console.log(resultat.chemin);
-        resultatDiv.innerHTML = `<p class='success'>Le plus court chemin de ${depart} à ${arrivee} est :</p>
-                                <p>${resultat.chemin.join(" → ")}</p>
-                                <p>${cost} : ${costAffichee} ${unite}</p>`;
+            resultatDiv.innerHTML = `<p class='success'>Le plus court chemin de ${depart} à ${arrivee} est :</p>
+                                    <p>${resultat.chemin.join(" → ")}</p>
+                                    <p>${cost} : ${costAffichee} ${unite}</p>`;
         }
     }
     </script>
 </body>
 </html>
+
 
 
 
